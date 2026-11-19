@@ -220,7 +220,7 @@ public class Main {
 
         Pedido pedido = new Pedido(restaurante.getMesas().get(m),
                 (Garcom) restaurante.getFuncionarios().get(g));
-        restaurante.adicionarPedido(pedido); // já registra, pois a mesa ficou ocupada
+        restaurante.adicionarPedido(pedido);
 
         String continuar = "s";
         while (continuar.equalsIgnoreCase("s")) {
@@ -274,7 +274,7 @@ public class Main {
         }
 
         Pedido p = restaurante.getPedidos().get(n);
-        p.fechar(); // lança PedidoFechadoException se já estava fechado
+        p.fechar();
         System.out.println("Pedido fechado. Total: R$ " + String.format("%.2f", p.calcularTotal()));
     }
 }
