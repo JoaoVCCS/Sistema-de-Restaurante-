@@ -1,5 +1,7 @@
 package pedido;
 
+import excecoes.MesaOcupadaException;
+
 public class Mesa {
     private int numeroMesa;
     private int lugares;
@@ -11,15 +13,18 @@ public class Mesa {
         this.ocupada = false;
     }
 
-    public int getNumeroMesa() {
-        return numeroMesa;
+    public void ocupar() throws MesaOcupadaException {
+        if (ocupada) {
+            throw new MesaOcupadaException(numeroMesa);
+        }
+        ocupada = true;
     }
 
-    public int getLugares() {
-        return lugares;
+    public void liberar() {
+        ocupada = false;
     }
 
-    public boolean isOcupada() {
-        return ocupada;
-    }
+    public int getNumeroMesa() { return numeroMesa; }
+    public int getLugares() { return lugares; }
+    public boolean isOcupada() { return ocupada; }
 }

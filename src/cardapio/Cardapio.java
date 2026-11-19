@@ -1,5 +1,7 @@
 package cardapio;
 
+import excecoes.ItemNaoEncontradoException;
+
 import java.util.ArrayList;
 
 public class Cardapio {
@@ -9,9 +11,11 @@ public class Cardapio {
         listaItens.add(item);
     }
 
-    public void removerItem(String nome) {
+    public void removerItem(String nome) throws ItemNaoEncontradoException {
         boolean removeu = listaItens.removeIf(item -> item.getNome().equalsIgnoreCase(nome));
-        System.out.println(removeu ? "Item removido com sucesso!" : "Item não encontrado.");
+        if (!removeu) {
+            throw new ItemNaoEncontradoException(nome);
+        }
     }
 
     public void listarItens() {
@@ -26,12 +30,12 @@ public class Cardapio {
         }
     }
 
-    public ItemCardapio buscarPorNome(String nome) {
+    public ItemCardapio buscarPorNome(String nome) throws ItemNaoEncontradoException {
         for (ItemCardapio item : listaItens) {
             if (item.getNome().equalsIgnoreCase(nome)) {
                 return item;
             }
         }
-        return null;
+        throw new ItemNaoEncontradoException(nome);
     }
 }

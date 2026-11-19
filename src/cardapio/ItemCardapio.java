@@ -6,8 +6,8 @@ public abstract class ItemCardapio {
     private String descricao;
 
     public ItemCardapio(String nome, double preco, String descricao) {
-        this.nome = nome;
-        this.preco = preco;
+        setNome(nome);
+        setPreco(preco);
         this.descricao = descricao;
     }
 
@@ -23,5 +23,19 @@ public abstract class ItemCardapio {
 
     public String getNome() {
         return nome;
+    }
+
+    public void setPreco(double preco) {
+        if (preco <= 0) {
+            throw new IllegalArgumentException("O preço deve ser maior que zero");
+        }
+        this.preco = preco;
+    }
+
+    public void setNome(String nome) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("O nome não pode ser vazio");
+        }
+        this.nome = nome;
     }
 }

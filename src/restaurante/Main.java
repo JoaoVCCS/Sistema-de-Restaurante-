@@ -6,6 +6,9 @@ import cardapio.Bebida;
 import cardapio.ItemCardapio;
 import cardapio.Prato;
 import cardapio.Sobremesa;
+import excecoes.ItemNaoEncontradoException;
+import excecoes.MesaOcupadaException;
+import excecoes.PedidoFechadoException;
 import pedido.ItemPedido;
 import pedido.Mesa;
 import pedido.Pedido;
@@ -30,24 +33,31 @@ public class Main {
                 continue;
             }
 
-            switch (opcao) {
-                case 1: cadastrarItem(); break;
-                case 2: restaurante.getCardapio().listarItens(); break;
-                case 3: buscarItem(); break;
-                case 4:
-                    System.out.print("Nome do item para remover: ");
-                    restaurante.getCardapio().removerItem(sc.nextLine());
-                    break;
-                case 5: cadastrarMesa(); break;
-                case 6: listarMesas(); break;
-                case 7: cadastrarGarcom(); break;
-                case 8: listarFuncionarios(); break;
-                case 9: criarPedido(); break;
-                case 10: listarPedidos(); break;
-                case 11: cadastrarCozinheiro(); break;
-                case 12: cadastrarGerente(); break;
-                case 0: System.out.println("Encerrando. Até logo!"); break;
-                default: System.out.println("Opção inválida.");
+            try {
+                switch (opcao) {
+                    case 1: cadastrarItem(); break;
+                    case 2: restaurante.getCardapio().listarItens(); break;
+                    case 3: buscarItem(); break;
+                    case 4: removerItem(); break;
+                    case 5: cadastrarMesa(); break;
+                    case 6: listarMesas(); break;
+                    case 7: cadastrarGarcom(); break;
+                    case 8: listarFuncionarios(); break;
+                    case 9: criarPedido(); break;
+                    case 10: listarPedidos(); break;
+                    case 11: cadastrarCozinheiro(); break;
+                    case 12: cadastrarGerente(); break;
+                    case 13: fecharPedido(); break;
+                    case 0: System.out.println("Encerrando. Até logo!"); break;
+                    default: System.out.println("Opção inválida.");
+                }
+            } catch (ItemNaoEncontradoException | MesaOcupadaException | PedidoFechadoException e) {
+                System.out.println("Erro: " + e.getMessage());
+            } catch (NumberFormatException e) {
+                // precisa vir ANTES de IllegalArgumentException (é filha dela)
+                System.out.println("Digite um número válido.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Dado inválido: " + e.getMessage());
             }
         }
         sc.close();
@@ -67,6 +77,7 @@ public class Main {
         System.out.println("10 - Listar pedidos");
         System.out.println("11 - Cadastrar cozinheiro");
         System.out.println("12 - Cadastrar gerente");
+        System.out.println("13 - Fechar pedido");
         System.out.println("0  - Sair");
         System.out.print("Escolha: ");
     }
@@ -86,30 +97,35 @@ public class Main {
                 System.out.print("Alcoólica (true/false): ");
                 boolean alc = Boolean.parseBoolean(sc.nextLine());
                 restaurante.getCardapio().adicionarItem(new Bebida(nome, preco, desc, alc));
+                System.out.println("Bebida cadastrada.");
                 break;
             case 2:
                 System.out.print("Tempo de preparo (min): ");
                 int tempo = Integer.parseInt(sc.nextLine());
                 restaurante.getCardapio().adicionarItem(new Prato(nome, preco, desc, tempo));
+                System.out.println("Prato cadastrado.");
                 break;
             case 3:
                 System.out.print("Vegana (true/false): ");
                 boolean vegana = Boolean.parseBoolean(sc.nextLine());
                 restaurante.getCardapio().adicionarItem(new Sobremesa(nome, preco, desc, vegana));
+                System.out.println("Sobremesa cadastrada.");
                 break;
             default:
                 System.out.println("Tipo inválido.");
         }
     }
 
-    static void buscarItem() {
+    static void buscarItem() throws ItemNaoEncontradoException {
         System.out.print("Nome do item: ");
         ItemCardapio item = restaurante.getCardapio().buscarPorNome(sc.nextLine());
-        if (item != null) {
-            item.exibirDetalhes();
-        } else {
-            System.out.println("Item não encontrado.");
-        }
+        item.exibirDetalhes();
+    }
+
+    static void removerItem() throws ItemNaoEncontradoException {
+        System.out.print("Nome do item para remover: ");
+        restaurante.getCardapio().removerItem(sc.nextLine());
+        System.out.println("Item removido com sucesso!");
     }
 
     static void cadastrarMesa() {
@@ -124,8 +140,9 @@ public class Main {
             System.out.println("Nenhuma mesa cadastrada.");
             return;
         }
+        int n = 1;
         for (Mesa m : restaurante.getMesas()) {
-            System.out.println("Mesa " + m.getNumeroMesa() + " | Lugares: " + m.getLugares()
+            System.out.println(n++ + " - Mesa " + m.getNumeroMesa() + " | Lugares: " + m.getLugares()
                     + " | " + (m.isOcupada() ? "Ocupada" : "Livre"));
         }
     }
@@ -172,20 +189,26 @@ public class Main {
             System.out.println("Nenhum funcionário cadastrado.");
             return;
         }
+        int n = 1;
         for (Funcionario f : restaurante.getFuncionarios()) {
-            System.out.println(f.getNome() + " -> bônus: " + f.calcularBonus());
+            System.out.println(n++ + " - " + f.getNome()
+                    + " (" + f.getClass().getSimpleName() + ")"
+                    + " -> bônus: R$ " + String.format("%.2f", f.calcularBonus()));
         }
     }
 
-    static void criarPedido() {
+    static void criarPedido() throws MesaOcupadaException {
         if (restaurante.getMesas().isEmpty() || restaurante.getFuncionarios().isEmpty()) {
             System.out.println("Cadastre ao menos uma mesa e um garçom antes.");
             return;
         }
 
-        System.out.print("Posição da mesa na lista: ");
+        listarMesas();
+        System.out.print("Número da mesa na lista: ");
         int m = Integer.parseInt(sc.nextLine()) - 1;
-        System.out.print("Posição do garçom na lista de funcionários: ");
+
+        listarFuncionarios();
+        System.out.print("Número do garçom na lista de funcionários: ");
         int g = Integer.parseInt(sc.nextLine()) - 1;
 
         if (m < 0 || m >= restaurante.getMesas().size()
@@ -197,24 +220,29 @@ public class Main {
 
         Pedido pedido = new Pedido(restaurante.getMesas().get(m),
                 (Garcom) restaurante.getFuncionarios().get(g));
+        restaurante.adicionarPedido(pedido); // já registra, pois a mesa ficou ocupada
 
         String continuar = "s";
         while (continuar.equalsIgnoreCase("s")) {
-            System.out.print("Nome do item do cardápio: ");
-            ItemCardapio item = restaurante.getCardapio().buscarPorNome(sc.nextLine());
-            if (item == null) {
-                System.out.println("Item não encontrado.");
-            } else {
+            try {
+                System.out.print("Nome do item do cardápio: ");
+                ItemCardapio item = restaurante.getCardapio().buscarPorNome(sc.nextLine());
                 System.out.print("Quantidade: ");
                 int qtd = Integer.parseInt(sc.nextLine());
                 pedido.adicionarItem(new ItemPedido(item, qtd));
+                System.out.println("Item adicionado!");
+            } catch (ItemNaoEncontradoException | PedidoFechadoException e) {
+                System.out.println("Erro: " + e.getMessage());
+            } catch (NumberFormatException e) {
+                System.out.println("Digite um número válido.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Dado inválido: " + e.getMessage());
             }
             System.out.print("Adicionar outro item? (s/n): ");
             continuar = sc.nextLine();
         }
 
-        restaurante.adicionarPedido(pedido);
-        System.out.println("Pedido criado. Total: R$ " + pedido.calcularTotal());
+        System.out.println("Pedido criado. Total: R$ " + String.format("%.2f", pedido.calcularTotal()));
     }
 
     static void listarPedidos() {
@@ -226,7 +254,27 @@ public class Main {
         for (Pedido p : restaurante.getPedidos()) {
             System.out.println("Pedido " + n++ + " | Mesa " + p.getMesa().getNumeroMesa()
                     + " | Garçom: " + p.getGarcom().getNome()
-                    + " | Total: R$ " + p.calcularTotal());
+                    + " | " + (p.isFechado() ? "Fechado" : "Aberto")
+                    + " | Total: R$ " + String.format("%.2f", p.calcularTotal()));
         }
+    }
+
+    static void fecharPedido() throws PedidoFechadoException {
+        if (restaurante.getPedidos().isEmpty()) {
+            System.out.println("Nenhum pedido.");
+            return;
+        }
+        listarPedidos();
+        System.out.print("Número do pedido para fechar: ");
+        int n = Integer.parseInt(sc.nextLine()) - 1;
+
+        if (n < 0 || n >= restaurante.getPedidos().size()) {
+            System.out.println("Pedido inválido.");
+            return;
+        }
+
+        Pedido p = restaurante.getPedidos().get(n);
+        p.fechar(); // lança PedidoFechadoException se já estava fechado
+        System.out.println("Pedido fechado. Total: R$ " + String.format("%.2f", p.calcularTotal()));
     }
 }
